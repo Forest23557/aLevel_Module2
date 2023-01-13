@@ -4,33 +4,33 @@ import com.shulha.devices.Device;
 import com.shulha.devices.Telephone;
 import com.shulha.devices.Television;
 import com.shulha.person.Customer;
-import com.shulha.person.Person;
-import com.shulha.person.PersonNames;
 import com.shulha.types.SaleTypes;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.BiPredicate;
 
 @Getter
 public class Invoice<E extends Device> {
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
     private static final BiPredicate<String, String> CHECK_ID = (checkingId, id) -> checkingId.equals(id);
     private final String id;
-    private final LocalDateTime dateTime;
+    private final String dateTime;
     private Customer customer;
-    private List<E> purchaseList;
+    private Set<E> purchaseSet;
     private SaleTypes type;
     private double limit;
     private double totalCost;
 
     public Invoice() {
-        this(new Customer(), new ArrayList<>(), 100_000);
+        this(new Customer(), new HashSet<>(), 100_000);
     }
 
-    public Invoice(final Customer customer, final List<E> purchaseList, final double limit) {
+    public Invoice(final Customer customer, final Set<E> purchaseSet, final double limit) {
         this.id = UUID.randomUUID().toString();
-        this.dateTime = LocalDateTime.now();
+        this.dateTime = LocalDateTime.now().format(DATE_TIME_FORMATTER);
         this.customer = customer;
         this.type = SaleTypes.RETAIL;
 
@@ -38,10 +38,10 @@ public class Invoice<E extends Device> {
             this.limit = limit;
         }
 
-        Optional.ofNullable(purchaseList)
+        Optional.ofNullable(purchaseSet)
                 .ifPresentOrElse(
-                        this::setPurchaseList,
-                        () -> this.purchaseList = new ArrayList<>()
+                        this::setPurchaseSet,
+                        () -> this.purchaseSet = new HashSet<>()
                 );
 
         if (Objects.nonNull(customer) && customer.getAge() < 18) {
@@ -59,11 +59,11 @@ public class Invoice<E extends Device> {
         }
     }
 
-    public void setPurchaseList(final List<E> purchaseList) {
-        if (Objects.nonNull(purchaseList)) {
-            this.purchaseList = purchaseList;
+    public void setPurchaseSet(final Set<E> purchaseSet) {
+        if (Objects.nonNull(purchaseSet)) {
+            this.purchaseSet = purchaseSet;
 
-            totalCost = purchaseList.stream()
+            totalCost = purchaseSet.stream()
                     .filter(Objects::nonNull)
                     .mapToDouble(Device::getPrice)
                     .sum();
@@ -82,16 +82,8 @@ public class Invoice<E extends Device> {
 
     public void addPurchase(final E purchase) {
         if (Objects.nonNull(purchase)) {
-            purchaseList.stream()
-                    .dropWhile(Objects::isNull)
-                    .filter(existPurchase -> CHECK_ID.test(existPurchase.getSerialNumber(), purchase.getSerialNumber()))
-                    .findAny()
-                    .ifPresentOrElse(
-                            checked -> {
-                            },
-                            () -> purchaseList.add(purchase)
-                    );
 
+            purchaseSet.add(purchase);
             totalCost += purchase.getPrice();
 
             if (totalCost > limit) {
@@ -101,14 +93,14 @@ public class Invoice<E extends Device> {
     }
 
     public void removePurchase(final String serialNumber) {
-        if (Objects.nonNull(purchaseList) && Objects.nonNull(serialNumber) && !serialNumber.isBlank()) {
-            purchaseList.stream()
+        if (Objects.nonNull(purchaseSet) && Objects.nonNull(serialNumber) && !serialNumber.isBlank()) {
+            purchaseSet.stream()
                     .dropWhile(Objects::isNull)
                     .filter(existPurchase -> CHECK_ID.test(existPurchase.getSerialNumber(), serialNumber))
                     .findAny()
                     .ifPresent(found -> {
                         totalCost -= found.getPrice();
-                        purchaseList.remove(found);
+                        purchaseSet.remove(found);
                     });
 
             if (totalCost > limit) {
@@ -118,8 +110,8 @@ public class Invoice<E extends Device> {
     }
 
     public void removeAll() {
-        if (Objects.nonNull(purchaseList)) {
-            purchaseList.removeAll(purchaseList);
+        if (Objects.nonNull(purchaseSet)) {
+            purchaseSet.removeAll(purchaseSet);
             totalCost = 0;
             type = SaleTypes.RETAIL;
         }
@@ -147,6 +139,6 @@ public class Invoice<E extends Device> {
                 "purchase list: %s%n" +
                 "type of purchase: %s%n" +
                 "total cost: %.2f$",
-                id, dateTime, customer, purchaseList, type, totalCost);
+                id, dateTime, customer, purchaseSet, type, totalCost);
     }
 }
