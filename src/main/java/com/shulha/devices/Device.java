@@ -28,10 +28,8 @@ public abstract class Device {
         this.series = series;
         this.screenType = screenType;
 
-        if (price > 0) {
+        if (price >= 0) {
             this.price = price;
-        } else {
-            this.price = 0;
         }
     }
 
@@ -48,7 +46,7 @@ public abstract class Device {
     }
 
     public void setPrice(final double price) {
-        if (price > 0) {
+        if (price >= 0) {
             this.price = price;
         }
     }
@@ -68,12 +66,11 @@ public abstract class Device {
 
     @Override
     public String toString() {
-        return String.format("Device: %n" +
-                        "type of the device: %s%n" +
-                        "serial number: %s%n" +
-                        "series: %s%n" +
-                        "screen type: %s%n" +
-                        "price: %.2f$ %n%n",
+        return String.format("type of the device - %s, " +
+                        "serial number - %s, " +
+                        "series - %s, " +
+                        "screen type - %s, " +
+                        "price - %.2f$",
                 deviceType, serialNumber, series, screenType, price);
     }
 }

@@ -12,19 +12,22 @@ public class Television extends Device {
     private String country;
 
     public Television() {
-        super();
+        this("none", null, 0, 0, "none");
     }
 
     public Television(final String series, final ScreenTypes screenType, final double price, final double diagonal,
                       final String country) {
         super(series, screenType, price);
         setDeviceType(DeviceTypes.TELEVISION);
-        this.diagonal = diagonal;
         this.country = country;
+
+        if (diagonal >= 0) {
+            this.diagonal = diagonal;
+        }
     }
 
     public void setDiagonal(final double diagonal) {
-        if (diagonal > 0) {
+        if (diagonal >= 0) {
             this.diagonal = diagonal;
         }
     }
@@ -37,13 +40,13 @@ public class Television extends Device {
 
     @Override
     public String toString() {
-        return String.format("%s: %n" +
-                        "serial number: %s%n" +
-                        "diagonal: %.2finch%n" +
-                        "series: %s%n" +
-                        "screen type: %s%n" +
-                        "country: %s%n" +
-                        "price: %.2f$ %n%n",
-                getDeviceType(), diagonal, getSerialNumber(), getSeries(), getScreenType(), country, getPrice());
+        return String.format("%s: " +
+                        "serial number - %s, " +
+                        "diagonal - %.2f inch, " +
+                        "series - %s, " +
+                        "screen type - %s, " +
+                        "country - %s, " +
+                        "price - %.2f$",
+                getDeviceType(),getSerialNumber(), diagonal, getSeries(), getScreenType(), country, getPrice());
     }
 }

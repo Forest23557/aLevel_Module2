@@ -11,7 +11,7 @@ public class Telephone extends Device {
     private String model;
 
     public Telephone() {
-        super();
+        this("none", null, 0, "none");
     }
 
     public Telephone(final String series, final ScreenTypes screenType, final int price, final String model) {
@@ -28,12 +28,12 @@ public class Telephone extends Device {
 
     @Override
     public String toString() {
-        return String.format("%s: %n" +
-                        "model: %s%n" +
-                        "serial number: %s%n" +
-                        "series: %s%n" +
-                        "screen type: %s%n" +
-                        "price: %.2f$ %n%n",
+        return String.format("%s: " +
+                        "model - %s, " +
+                        "serial number - %s, " +
+                        "series - %s, " +
+                        "screen type - %s, " +
+                        "price - %.2f$",
                 getDeviceType(), model, getSerialNumber(), getSeries(), getScreenType(), getPrice());
     }
 }
