@@ -4,6 +4,7 @@ import com.shulha.devices.Device;
 import com.shulha.devices.Telephone;
 import com.shulha.devices.Television;
 import com.shulha.person.Customer;
+import com.shulha.person.PersonNames;
 import com.shulha.types.SaleTypes;
 import lombok.Getter;
 
@@ -25,7 +26,7 @@ public class Invoice<E extends Device> {
     private double totalCost;
 
     public Invoice() {
-        this(new Customer(), new HashSet<>(), 100_000);
+        this(new Customer(), new HashSet<>(), 3_000);
     }
 
     public Invoice(final Customer customer, final Set<E> purchaseSet, final double limit) {
@@ -34,44 +35,30 @@ public class Invoice<E extends Device> {
         this.customer = customer;
         this.type = SaleTypes.RETAIL;
 
-        if (limit > 0) {
-            this.limit = limit;
-        }
-
-        Optional.ofNullable(purchaseSet)
-                .ifPresentOrElse(
-                        this::setPurchaseSet,
-                        () -> this.purchaseSet = new HashSet<>()
-                );
-
-        if (Objects.nonNull(customer) && customer.getAge() < 18) {
-            this.type = SaleTypes.LOW_AGE;
-        }
+        setLimit(limit);
+        setPurchaseSet(purchaseSet);
+        setSaleType(customer, totalCost, limit);
     }
 
     public void setCustomer(final Customer customer) {
         if (Objects.nonNull(customer)) {
             this.customer = customer;
 
-            Optional.of(customer)
-                    .filter(customer1 -> customer1.getAge() < 18)
-                    .ifPresent(customer1 -> type = SaleTypes.LOW_AGE);
+            setSaleType(customer, totalCost, limit);
         }
     }
 
     public void setPurchaseSet(final Set<E> purchaseSet) {
-        if (Objects.nonNull(purchaseSet)) {
-            this.purchaseSet = purchaseSet;
+        Optional.ofNullable(purchaseSet)
+                .ifPresentOrElse(
+                        purchaseSet1 -> {
+                            this.purchaseSet = purchaseSet1;
+                            setTotalCost(purchaseSet1);
+                        },
+                        () -> this.purchaseSet = new HashSet<>()
+                );
 
-            totalCost = purchaseSet.stream()
-                    .filter(Objects::nonNull)
-                    .mapToDouble(Device::getPrice)
-                    .sum();
-
-            if (totalCost > limit) {
-                type = SaleTypes.WHOLESALE;
-            }
-        }
+        setSaleType(customer, totalCost, limit);
     }
 
     public void setLimit(final double limit) {
@@ -82,13 +69,9 @@ public class Invoice<E extends Device> {
 
     public void addPurchase(final E purchase) {
         if (Objects.nonNull(purchase)) {
-
             purchaseSet.add(purchase);
-            totalCost += purchase.getPrice();
-
-            if (totalCost > limit) {
-                type = SaleTypes.WHOLESALE;
-            }
+            increaseTotalCost(purchase);
+            setSaleType(customer, totalCost, limit);
         }
     }
 
@@ -99,13 +82,11 @@ public class Invoice<E extends Device> {
                     .filter(existPurchase -> CHECK_ID.test(existPurchase.getSerialNumber(), serialNumber))
                     .findAny()
                     .ifPresent(found -> {
-                        totalCost -= found.getPrice();
+                        decreaseTotalCost(found);
                         purchaseSet.remove(found);
                     });
 
-            if (totalCost > limit) {
-                type = SaleTypes.WHOLESALE;
-            }
+            setSaleType(customer, totalCost, limit);
         }
     }
 
@@ -113,7 +94,32 @@ public class Invoice<E extends Device> {
         if (Objects.nonNull(purchaseSet)) {
             purchaseSet.removeAll(purchaseSet);
             totalCost = 0;
-            type = SaleTypes.RETAIL;
+            setSaleType(customer, totalCost, limit);
+        }
+    }
+
+    private void setTotalCost(final Set<E> purchaseSet) {
+        totalCost = purchaseSet.stream()
+                .filter(Objects::nonNull)
+                .mapToDouble(Device::getPrice)
+                .sum();
+    }
+
+    private void increaseTotalCost(final E purchase) {
+        totalCost += purchase.getPrice();
+    }
+
+    private void decreaseTotalCost(final E purchase) {
+        totalCost -= purchase.getPrice();
+    }
+
+    private void setSaleType(final Customer customer, final double totalCost, final double limit) {
+        if (Objects.nonNull(customer) && customer.getAge() < 18) {
+            this.type = SaleTypes.LOW_AGE;
+        } else if (totalCost > limit) {
+            this.type = SaleTypes.WHOLESALE;
+        } else {
+            this.type = SaleTypes.RETAIL;
         }
     }
 
@@ -134,11 +140,23 @@ public class Invoice<E extends Device> {
     public String toString() {
         return String.format("Invoice%n" +
                 "id: %s%n" +
-                "data and time: %s%n" +
+                "date and time: %s%n" +
                 "customer: %s%n" +
                 "purchase list: %s%n" +
                 "type of purchase: %s%n" +
                 "total cost: %.2f$",
                 id, dateTime, customer, purchaseSet, type, totalCost);
     }
+
+//    public static void main(String[] args) {
+//        final Customer customer1 = new Customer(PersonNames.AMELIA, 16, "amelia@gmail.com");
+//        final Invoice<Device> invoice = new Invoice<>(customer1, new HashSet<>(), 100_000);
+//        final Device tv = new Television();
+//        final Device phone = new Telephone();
+//        tv.setPrice(60_000);
+//        phone.setPrice(40_000);
+//        invoice.addPurchase(tv);
+//        invoice.addPurchase(phone);
+//        System.out.println(invoice);
+//    }
 }
