@@ -16,6 +16,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -51,6 +53,10 @@ public class ShopService {
                     .count();
         }
 
+        System.out.println();
+        System.out.println("Number of sold goods by the category " + deviceType + " is " + numberOfGoods);
+        System.out.println();
+
         return numberOfGoods;
     }
 
@@ -61,6 +67,10 @@ public class ShopService {
                 .sorted(comparator)
                 .limit(1)
                 .collect(Collectors.toMap(Invoice::getCustomer, Invoice::getTotalCost));
+
+        System.out.println("The lowest cost of invoice: " + customerLowestCostMap.values());
+        System.out.println("Customer: " + customerLowestCostMap.keySet());
+        System.out.println();
 
         return customerLowestCostMap;
     }
@@ -73,6 +83,9 @@ public class ShopService {
                     .mapToDouble(Invoice::getTotalCost)
                     .sum();
         }
+
+        System.out.println("Total cost of all invoices is " + totalCost + "$");
+        System.out.println();
 
         return totalCost;
     }
@@ -87,27 +100,130 @@ public class ShopService {
                     .count();
         }
 
+        System.out.println("Number of invoices by category " + saleType + " is " + invoiceNumber);
+        System.out.println();
+
         return invoiceNumber;
     }
 
-    public Invoice<Device> getRandomInvoice() {
-        getGoodsFromCsv("csv/goods.csv");
+    public List<Invoice<Device>> getInvoicesThatContainOnlyOneType() {
+        final List<Invoice<Device>> invoiceList;
+        final Predicate<Invoice<Device>> invoicePredicate = invoice -> {
+            Iterator<Device> iterator = invoice.getPurchaseSet().iterator();
+            DeviceTypes previous = null;
+            Boolean answer = true;
 
+            while (iterator.hasNext()) {
+                DeviceTypes current = iterator.next().getDeviceType();
+
+                if (previous != null && previous != current) {
+                    answer = false;
+                    break;
+                }
+                previous = current;
+            }
+            return answer;
+        };
+
+        if (invoiceRepository.getAll().length != 0) {
+            invoiceList = Stream.of(invoiceRepository.getAll())
+                    .filter(invoicePredicate).collect(Collectors.toCollection(ArrayList::new));
+        } else {
+            invoiceList = new ArrayList<>();
+        }
+
+        System.out.println("Invoices that contain only one type of goods: ");
+        System.out.println(invoiceList);
+        System.out.println();
+
+        return invoiceList;
+    }
+
+    public List<Invoice<Device>> getFirstInvoices(final int invoiceNumber) {
+        final List<Invoice<Device>> invoiceList;
+
+        if (invoiceNumber > 0 && invoiceRepository.getAll().length != 0) {
+            invoiceList = Stream.of(invoiceRepository.getAll())
+                    .limit(invoiceNumber)
+                    .collect(Collectors.toCollection(ArrayList::new));
+        } else {
+            invoiceList = new ArrayList<>();
+        }
+
+        System.out.println(invoiceNumber + " first invoices: ");
+        System.out.println(invoiceList);
+        System.out.println();
+
+        return invoiceList;
+    }
+
+    public List<Invoice<Device>> getLowAgeInvoices() {
+        final List<Invoice<Device>> invoiceList;
+        final Predicate<Invoice<Device>> invoicePredicate = invoice -> invoice.getType().equals(SaleTypes.LOW_AGE);
+
+        if (invoiceRepository.getAll().length != 0) {
+            invoiceList = Stream.of(invoiceRepository.getAll())
+                    .filter(invoicePredicate)
+                    .collect(Collectors.toCollection(ArrayList::new));
+        } else {
+            invoiceList = new ArrayList<>();
+        }
+
+        System.out.println("Invoices that type is " + SaleTypes.LOW_AGE + ": ");
+        System.out.println(invoiceList);
+        System.out.println();
+
+        return invoiceList;
+    }
+
+    public List<Invoice<Device>> getSortedInvoiceArray() {
+        final List<Invoice<Device>> invoiceList;
+        final Comparator<Invoice<Device>> ageComparator =
+                (firstInvoice, secondInvoice) -> firstInvoice.getCustomer().getAge() -
+                        secondInvoice.getCustomer().getAge();
+        final Comparator<Invoice<Device>> deviceNumberComparator =
+                (firstInvoice, secondInvoice) -> firstInvoice.getPurchaseSet().size() -
+                        secondInvoice.getPurchaseSet().size();
+        final Comparator<Invoice<Device>> totalCostComparator =
+                (firstInvoice, secondInvoice) -> (int) (firstInvoice.getTotalCost() - secondInvoice.getTotalCost());
+        final Comparator<Invoice<Device>> generalComparator = ageComparator.thenComparing(deviceNumberComparator)
+                .thenComparing(totalCostComparator);
+
+        if (invoiceRepository.getAll().length != 0) {
+            invoiceList = Stream.of(invoiceRepository.getAll())
+                    .sorted(generalComparator)
+                    .collect(Collectors.toCollection(ArrayList::new));
+        } else {
+            invoiceList = new ArrayList<>();
+        }
+
+        System.out.println("Sorted invoice list: ");
+        System.out.println(invoiceList);
+        System.out.println();
+
+        return invoiceList;
+    }
+
+    public Invoice<Device> getRandomInvoice(final String path) {
+        getGoodsFromCsv(path);
         final Invoice<Device> invoice = new Invoice<>();
-        final int randomBound = RANDOM.nextInt(5) + 1;
-        final int numberOfGoodsInCsv = valuesForGoods.keySet().size();
 
-        for (int i = 0; i < randomBound; i++) {
-            final int randomDeviceNumber = RANDOM.nextInt(numberOfGoodsInCsv);
-            getDeviceFromStringMap(randomDeviceNumber).ifPresent(device -> invoice.addPurchase(device));
+        if (!valuesForGoods.isEmpty()) {
+            final int randomBound = RANDOM.nextInt(5) + 1;
+            final int numberOfGoodsInCsv = valuesForGoods.keySet().size();
+
+            for (int i = 0; i < randomBound; i++) {
+                final int randomDeviceNumber = RANDOM.nextInt(numberOfGoodsInCsv);
+                getDeviceFromStringMap(randomDeviceNumber, path).ifPresent(device -> invoice.addPurchase(device));
+            }
+
+            if (!invoice.getPurchaseSet().isEmpty()) {
+                invoice.setCustomer(PERSON_SERVICE.getRandomCustomer());
+                invoiceRepository.save(invoice);
+            }
+
+            invoiceLogs(invoice);
         }
-
-        if (!invoice.getPurchaseSet().isEmpty()) {
-            invoice.setCustomer(PERSON_SERVICE.getRandomCustomer());
-            invoiceRepository.save(invoice);
-        }
-
-        invoiceLogs(invoice);
 
         return invoice;
     }
@@ -120,8 +236,8 @@ public class ShopService {
         }
     }
 
-    public Optional<Device> getDeviceFromStringMap(final int deviceNumber) {
-        getGoodsFromCsv("csv/goods.csv");
+    public Optional<Device> getDeviceFromStringMap(final int deviceNumber, final String path) {
+        getGoodsFromCsv(path);
 
         final int numberOfGoodsInCsv = valuesForGoods.keySet().size();
         final Optional<Device> optionalDevice = Optional.of(deviceNumber)
@@ -219,24 +335,10 @@ public class ShopService {
 
         } catch (final IOException ex) {
             System.out.println(ex.getMessage());
+        } catch (final NullPointerException ex) {
+            ex.printStackTrace();
         }
 
         return valuesForGoods;
-    }
-
-
-
-    public static void main(String[] args) {
-        final ShopService shopService = ShopService.getInstance();
-        shopService.getRandomInvoice();
-        shopService.getRandomInvoice();
-        shopService.getRandomInvoice();
-        shopService.getRandomInvoice();
-        shopService.getRandomInvoice();
-        shopService.getRandomInvoice();
-        System.out.println(shopService.getNumberOfSoldGoodsByCategory(DeviceTypes.TELEPHONE));
-        System.out.println(shopService.getInvoiceWithTheLowestCost());
-        System.out.println(shopService.getTotalCostOfAllInvoices());
-        System.out.println(shopService.getInvoiceNumberByCategory(SaleTypes.RETAIL));
     }
 }
