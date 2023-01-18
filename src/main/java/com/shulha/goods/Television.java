@@ -1,4 +1,4 @@
-package com.shulha.devices;
+package com.shulha.goods;
 
 import com.shulha.types.DeviceTypes;
 import com.shulha.types.ScreenTypes;

@@ -1,4 +1,4 @@
-package com.shulha.devices;
+package com.shulha.goods;
 
 import com.shulha.types.DeviceTypes;
 import com.shulha.types.ScreenTypes;
@@ -14,7 +14,7 @@ public class Telephone extends Device {
         this("none", null, 0, "none");
     }
 
-    public Telephone(final String series, final ScreenTypes screenType, final int price, final String model) {
+    public Telephone(final String series, final ScreenTypes screenType, final double price, final String model) {
         super(series, screenType, price);
         setDeviceType(DeviceTypes.TELEPHONE);
         this.model = model;

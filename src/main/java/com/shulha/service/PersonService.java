@@ -21,7 +21,7 @@ public class PersonService {
          return instance;
     }
 
-    public Person getRandomCustomer() {
+    public Customer getRandomCustomer() {
         final PersonNames[] personNames = PersonNames.values();
         final int randomIndex = RANDOM.nextInt(personNames.length);
         PersonNames name = personNames[randomIndex];

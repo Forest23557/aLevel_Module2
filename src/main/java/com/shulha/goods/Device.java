@@ -1,4 +1,4 @@
-package com.shulha.devices;
+package com.shulha.goods;
 
 import com.shulha.types.DeviceTypes;
 import com.shulha.types.ScreenTypes;
@@ -7,7 +7,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
 @Getter

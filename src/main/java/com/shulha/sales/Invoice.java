@@ -1,10 +1,7 @@
 package com.shulha.sales;
 
-import com.shulha.devices.Device;
-import com.shulha.devices.Telephone;
-import com.shulha.devices.Television;
+import com.shulha.goods.Device;
 import com.shulha.person.Customer;
-import com.shulha.person.PersonNames;
 import com.shulha.types.SaleTypes;
 import lombok.Getter;
 
@@ -26,7 +23,7 @@ public class Invoice<E extends Device> {
     private double totalCost;
 
     public Invoice() {
-        this(new Customer(), new HashSet<>(), 3_000);
+        this(new Customer(), new HashSet<>(), 2_500);
     }
 
     public Invoice(final Customer customer, final Set<E> purchaseSet, final double limit) {
@@ -138,13 +135,13 @@ public class Invoice<E extends Device> {
 
     @Override
     public String toString() {
-        return String.format("Invoice%n" +
+        return String.format("%nInvoice%n" +
                 "id: %s%n" +
                 "date and time: %s%n" +
                 "customer: %s%n" +
                 "purchase list: %s%n" +
                 "type of purchase: %s%n" +
-                "total cost: %.2f$",
+                "total cost: %.2f$%n",
                 id, dateTime, customer, purchaseSet, type, totalCost);
     }
 
