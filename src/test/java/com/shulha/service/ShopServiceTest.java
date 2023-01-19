@@ -17,10 +17,10 @@ import java.util.*;
 
 class ShopServiceTest {
     private static ShopService target;
+    private static Repository<String, Invoice<Device>> invoiceMapRepository;
     private Invoice<Device> invoice;
     private Device device;
     private Device device1;
-    private static Repository<String, Invoice<Device>> invoiceMapRepository;
     private Customer customer;
     private Invoice[] invoices;
     private Set<Device> purchaseSet;
