@@ -39,6 +39,14 @@ public class ShopService {
         return instance;
     }
 
+    public static ShopService getInstance(final Repository<String, Invoice<Device>> invoiceRepository) {
+        instance = Optional
+                .ofNullable(instance)
+                .orElseGet(() -> new ShopService(Optional.ofNullable(invoiceRepository)
+                        .orElseGet(() -> InvoiceMapRepository.getInstance())));
+        return instance;
+    }
+
     public Invoice[] getAllInvoices() {
         return invoiceRepository.getAll();
     }
@@ -49,24 +57,29 @@ public class ShopService {
         if (Objects.nonNull(deviceType) && invoiceRepository.getAll().length != 0) {
             numberOfGoods = Stream.of(invoiceRepository.getAll())
                     .flatMap(invoice -> invoice.getPurchaseSet().stream())
-                    .filter(device -> device.getDeviceType().equals(deviceType))
+                    .filter(device -> deviceType.equals(device.getDeviceType()))
                     .count();
         }
 
         System.out.println();
-        System.out.println("Number of sold goods by the category " + deviceType + " is " + numberOfGoods);
+        System.out.println("Number of sold goods by category " + deviceType + " is " + numberOfGoods);
         System.out.println();
 
         return numberOfGoods;
     }
 
     public Map<Customer, Double> getInvoiceWithTheLowestCost() {
-        final Comparator<Invoice<Device>> comparator = (firstInvoice, secondInvoice) ->
-                (int) (firstInvoice.getTotalCost() - secondInvoice.getTotalCost());
-        final Map<Customer, Double> customerLowestCostMap = Stream.of(invoiceRepository.getAll())
-                .sorted(comparator)
-                .limit(1)
-                .collect(Collectors.toMap(Invoice::getCustomer, Invoice::getTotalCost));
+        final Map<Customer, Double> customerLowestCostMap;
+        if (invoiceRepository.getAll().length != 0) {
+            final Comparator<Invoice<Device>> comparator = (firstInvoice, secondInvoice) ->
+                    (int) (firstInvoice.getTotalCost() - secondInvoice.getTotalCost());
+            customerLowestCostMap = Stream.of(invoiceRepository.getAll())
+                    .sorted(comparator)
+                    .limit(1)
+                    .collect(Collectors.toMap(Invoice::getCustomer, Invoice::getTotalCost));
+        } else {
+            customerLowestCostMap = new HashMap<>();
+        }
 
         System.out.println("The lowest cost of invoice: " + customerLowestCostMap.values());
         System.out.println("Customer: " + customerLowestCostMap.keySet());
@@ -96,7 +109,7 @@ public class ShopService {
         if (Objects.nonNull(saleType) && invoiceRepository.getAll().length != 0) {
             invoiceNumber = Stream.of(invoiceRepository.getAll())
                     .map(Invoice::getType)
-                    .filter(type -> type.equals(saleType))
+                    .filter(type -> saleType.equals(type))
                     .count();
         }
 
@@ -150,7 +163,7 @@ public class ShopService {
             invoiceList = new ArrayList<>();
         }
 
-        System.out.println(invoiceNumber + " first invoices: ");
+        System.out.println("First " + invoiceNumber + " invoices: ");
         System.out.println(invoiceList);
         System.out.println();
 
